@@ -393,12 +393,20 @@ func broadcastSSE(event string, data interface{}) {
 	}
 }
 
-// ---------------------- 启动 Server ----------------------
-func StartMcpServer() {
+type McpConf struct {
+	Addr string `yaml:"addr" default:"localhost"`
+	Port int    `yaml:"port" default:"8074"`
+}
 
-	// 注册工具
-	testTools()
+type McpServer struct {
+	conf McpConf
+}
 
+func NewMcpServer(conf McpConf) *McpServer {
+	return &McpServer{conf: conf}
+}
+
+func (s *McpServer) Start() {
 	http.HandleFunc("/mcp", httpHandler)
 	http.HandleFunc("/ws", wsHandler)
 	http.HandleFunc("/sse", sseHandler)
@@ -415,7 +423,21 @@ func StartMcpServer() {
 			})
 		}
 	}()
+	fmt.Printf("✅ MCP Server running at: http://%s:%d\n", s.conf.Addr, s.conf.Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", s.conf.Addr, s.conf.Port), nil))
 
-	fmt.Println("✅ MCP Server running at: http://localhost:8074")
-	log.Fatal(http.ListenAndServe(":8074", nil))
+}
+
+// ---------------------- 启动 Server ----------------------
+func StartMcpServer() {
+
+	// 注册工具
+	testTools()
+
+	// 启动服务
+	mcp := NewMcpServer(McpConf{
+		Addr: "localhost",
+		Port: 8074,
+	})
+	mcp.Start()
 }
